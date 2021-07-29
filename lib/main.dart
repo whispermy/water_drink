@@ -1,77 +1,120 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MaterialApp(
+      title: 'Reading and Writing Files',
+      home: FlutterDemo(storage: CounterStorage()),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class CounterStorage {
+  var now = new DateTime.now();
+  String dateToday = '';
+  String timeToday = '';
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    now = DateTime.now();
+    dateToday = now.toString().substring(0,10);
+    return File('$path/$dateToday.txt');
+  }
+
+  Future<String> readCounter() async {
+    String contents = '';
+    try {
+      final file = await _localFile;
+      // Read the file
+      contents = await file.readAsString();
+
+      return contents;
+      // return int.parse(contents);
+    } catch (e) {
+      // If encountering an error, return 0
+      contents = 'ERROR: file read error.';
+      writeCounter(contents);
+      return contents;
+    }
+  }
+
+  Future<File> writeCounter(String data) async {
+    final file = await _localFile;
+    now = DateTime.now();
+    timeToday = now.toString().substring(10,19);
+
+    // Write the file
+    return file.writeAsString('SAVE TIME: $dateToday$timeToday VALUES: $data');
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+class FlutterDemo extends StatefulWidget {
+  const FlutterDemo({Key? key, required this.storage}) : super(key: key);
 
-  final String title;
+  final CounterStorage storage;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _FlutterDemoState createState() => _FlutterDemoState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  var now = new DateTime.now();
-  String timeToday = '';
-  String dateToday = '';
+class _FlutterDemoState extends State<FlutterDemo> {
+  int drinkedwater = 0;
+  String value = '';
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-      now = DateTime.now();
-      dateToday = now.toString().substring(0,10);
-      timeToday = now.toString().substring(10,19);
+  @override
+  void initState() {
+    super.initState();
+    widget.storage.readCounter().then((value) {
+      setState(() {
+        String temp = value.substring(39,);
+        print('temp: $temp');
+        drinkedwater = int.parse(temp);
+        print('init value is $value');
+      });
     });
+  }
+
+  Future<File> _incrementCounter() {
+    setState(() {
+      drinkedwater = drinkedwater + 300;
+    });
+
+    // Write the variable as a string to the file.
+    value = '$drinkedwater';
+    return widget.storage.writeCounter(value);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text('Today\'s Drinked water App'),
+        backgroundColor: Colors.teal[200],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:'
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-            Text(
-              '$dateToday $timeToday'
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+      body: Column(
+        children: [
+          Text(
+            'you drinked water $drinkedwater ml.',
+          ),
+          FloatingActionButton(
+            onPressed: _incrementCounter,
+            tooltip: 'Save and Increment',
+            child: const Icon(Icons.add),
+            backgroundColor: Colors.teal[200],
+          ),
+        ],
+        mainAxisAlignment: MainAxisAlignment.center,
+      ), 
     );
   }
 }
